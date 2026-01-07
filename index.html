@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>xCHAMi STUDIO | Ultimate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #00f2ea;
+            --secondary: #ff0050;
+            --bg-dark: #050505;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --font-ui: 'Outfit', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            margin: 0; background: var(--bg-dark); color: var(--text-main);
+            font-family: var(--font-ui);
+            min-height: 100vh;
+            overflow-x: hidden; /* Side scroll off */
+            overflow-y: auto;   /* Scroll ON (Fixed here) */
+        }
+
+        /* --- BACKGROUND FX --- */
+        .bg-mesh {
+            position: fixed; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at 50% -20%, #1a0025, #000);
+        }
+        .orb {
+            position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.3;
+            animation: float 10s infinite alternate;
+        }
+        .orb-1 { width: 300px; height: 300px; background: var(--primary); top: -50px; left: -50px; }
+        .orb-2 { width: 400px; height: 400px; background: var(--secondary); bottom: -50px; right: -50px; }
+        @keyframes float { 0% {transform:translate(0,0);} 100% {transform:translate(30px,30px);} }
+
+        /* --- UI COMPONENTS --- */
+        nav { padding: 25px; text-align: center; position: relative; z-index: 10; }
+        .logo { font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; user-select: none; }
+        .logo span { color: var(--primary); }
+
+        /* --- MAIN VIEW (UPDATED FOR SCROLLING) --- */
+        #userView {
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: flex-start; /* Start from top */
+            padding-top: 20px;
+            padding-bottom: 50px; /* Space for scrolling */
+            min-height: 80vh;
+        }
+
+        .glass-panel {
+            width: 90%; max-width: 420px;
+            background: var(--glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border); border-radius: 24px; padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6); text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%; padding: 16px; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+            border-radius: 12px; color: #fff; font-family: var(--font-ui); outline: none; margin: 20px 0;
+            box-sizing: border-box; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 242, 234, 0.1); }
+
+        .btn-main {
+            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: #000; font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,242,234,0.2); }
+
+        /* --- RESULT AREA --- */
+        #resultArea { display: none; margin-top: 20px; animation: slideUp 0.5s; }
+        @keyframes slideUp { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
+        
+        /* Fixed Video Height for Mobile */
+        video { 
+            width: 100%; 
+            max-height: 40vh; /* Don't take more than 40% of screen height */
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            margin-bottom: 10px; 
+            background: #000;
+        }
+        
+        .btn-sec {
+            background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border);
+            padding: 12px; width: 100%; border-radius: 12px; margin-top: 10px; cursor: pointer;
+            text-decoration: none; display: flex; justify-content: center; gap: 8px; font-size: 0.9rem;
+        }
+
+        /* --- ADMIN DASHBOARD --- */
+        #adminView {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #050505; z-index: 100; padding: 20px; box-sizing: border-box;
+            overflow-y: auto; font-family: var(--font-code);
+        }
+
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .status-dot { width: 10px; height: 10px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 10px #00ff88; display: inline-block; margin-right: 5px; }
+
+        .dashboard-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;
+        }
+
+        .stat-card { background: #0f0f0f; border: 1px solid #222; padding: 20px; border-radius: 16px; }
+        .stat-label { font-size: 0.8rem; color: #666; text-transform: uppercase; }
+        .stat-val { font-size: 1.8rem; font-weight: 700; color: var(--primary); display: block; margin-top: 5px; }
+
+        .chart-box { background: #0f0f0f; border: 1px solid #222; padding: 15px; border-radius: 16px; margin-bottom: 20px; height: 250px; }
+
+        .terminal-log {
+            background: #000; border: 1px solid #333; padding: 15px; border-radius: 12px;
+            height: 150px; overflow-y: scroll; font-size: 0.8rem; color: #00ff88; margin-bottom: 20px;
+        }
+        .log-item { margin-bottom: 5px; opacity: 0.8; }
+        .log-time { color: #555; margin-right: 10px; }
+
+        #toast {
+            position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+            background: #111; border: 1px solid var(--border); padding: 12px 25px;
+            border-radius: 50px; display: flex; gap: 10px; align-items: center;
+            opacity: 0; pointer-events: none; transition: 0.3s; z-index: 200;
+        }
+        
+        #pinModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 300;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-mesh">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <nav>
+        <div class="logo" onclick="secretTrigger()">xCHAMi <span>STUDIO</span></div>
+    </nav>
+
+    <div id="toast"><i class="fa-solid fa-check"></i> <span id="toastMsg">Message</span></div>
+
+    <div id="userView">
+        <div class="glass-panel">
+            <h2 style="margin:0;">TikTok Downloader</h2>
+            <p style="color:#888; font-size:0.9rem;">Clean. Fast. No Watermark.</p>
+
+            <input type="text" id="urlInput" placeholder="Paste link here..." autocomplete="off">
+            <button class="btn-main" type="button" onclick="processDownload()" id="dlBtn">Download Video</button>
+
+            <div id="resultArea">
+                <div style="text-align:left; margin-bottom:10px;">
+                    <span style="color:var(--primary); font-weight:600;" id="authName">@User</span>
+                </div>
+                <video id="vidPlayer" controls playsinline loop></video>
+                
+                <a id="dlLink" href="#" class="btn-main" style="text-decoration:none; display:flex; justify-content:center; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-download"></i> Save Video
+                </a>
+                
+                <a id="audioLink" href="#" class="btn-sec" target="_blank">
+                    <i class="fa-solid fa-music"></i> Save Audio Only
+                </a>
+                
+                <button class="btn-sec" onclick="resetUI()">Download Another</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminView">
+        <div class="admin-header">
+            <div>
+                <h2 style="margin:0; color:#fff;">SYSTEM <span style="color:var(--primary)">DASHBOARD</span></h2>
+                <div style="font-size:0.8rem; color:#666; margin-top:5px;">Version 4.3.1 (Scroll Fix)</div>
+            </div>
+            <button onclick="logoutAdmin()" style="background:#222; color:#fff; border:1px solid #333; padding:8px 20px; border-radius:8px; cursor:pointer;">EXIT</button>
+        </div>
+
+        <div style="margin-bottom:20px; display:flex; gap:20px; font-size:0.9rem;">
+            <div><span class="status-dot"></span> Server Online</div>
+            <div><i class="fa-solid fa-clock" style="color:#666;"></i> <span id="sysTime">00:00:00</span></div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Visits</div>
+                <span class="stat-val" id="statVisits">0</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Downloads</div>
+                <span class="stat-val" id="statDownloads">0</span>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Success Rate</div>
+                <span class="stat-val" style="color:var(--secondary)">100%</span>
+            </div>
+        </div>
+
+        <div class="chart-box">
+            <canvas id="adminChart"></canvas>
+        </div>
+
+        <div style="font-size:0.9rem; color:#fff; margin-bottom:10px;">Logs</div>
+        <div class="terminal-log" id="activityLog">
+            <div class="log-item">> System Ready...</div>
+        </div>
+
+        <div style="border-top:1px solid #333; padding-top:20px;">
+            <button onclick="clearData()" style="background:rgba(255,0,80,0.1); color:var(--secondary); border:1px solid var(--secondary); padding:10px 20px; border-radius:8px; cursor:pointer;">
+                <i class="fa-solid fa-trash"></i> PURGE DB
+            </button>
+        </div>
+    </div>
+
+    <div id="pinModal">
+        <div class="glass-panel" style="max-width:300px;">
+            <h3>SECURITY</h3>
+            <input type="tel" id="pinIn" placeholder="Enter PIN" style="text-align:center; letter-spacing:5px; font-size:1.2rem;" maxlength="4">
+            <button class="btn-main" onclick="checkPin()">UNLOCK</button>
+            <button class="btn-sec" onclick="document.getElementById('pinModal').style.display='none'" style="border:none;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const DB = {
+            get: () => JSON.parse(localStorage.getItem('x_ultimate') || '{"visits":0, "downloads":0, "chart":[0,0,0,0,0,0,0], "logs":[]}'),
+            save: (d) => localStorage.setItem('x_ultimate', JSON.stringify(d)),
+            log: (msg) => {
+                let d = DB.get(); d.logs.unshift({ t: new Date().toLocaleTimeString(), m: msg });
+                if(d.logs.length > 20) d.logs.pop(); DB.save(d); renderLogs();
+            },
+            visit: () => { let d = DB.get(); d.visits++; DB.save(d); },
+            download: () => { let d = DB.get(); d.downloads++; d.chart[6]++; DB.save(d); renderStats(); }
+        };
+
+        DB.visit();
+
+        const API = "https://chamidu-tt-downlode-70.deno.dev/?url=";
+
+        function showToast(msg, error=false) {
+            const t = document.getElementById('toast');
+            t.innerHTML = `<i class="${error?'fa-solid fa-triangle-exclamation':'fa-solid fa-check'}"></i> ${msg}`;
+            t.style.color = error ? 'var(--secondary)' : '#fff';
+            t.style.opacity = 1; t.style.top = "40px";
+            setTimeout(() => { t.style.opacity = 0; t.style.top = "30px"; }, 3000);
+        }
+
+        async function processDownload() {
+            const url = document.getElementById('urlInput').value.trim();
+            const btn = document.getElementById('dlBtn');
+            const res = document.getElementById('resultArea');
+
+            if(!url) return showToast("Please paste a link!", true);
+
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+            res.style.display = 'none';
+
+            try {
+                DB.log(`Fetching: ${url.substring(0,15)}...`);
+                const req = await fetch(API + encodeURIComponent(url));
+                const data = await req.json();
+
+                let vid = data.data?.play || data.video?.noWatermark || data.video?.url || data.play || data.url;
+                if(data.video && typeof data.video === 'string') vid = data.video;
+                
+                let aud = data.music || data.music_info?.play || data.data?.music;
+                let user = data.author || data.data?.author?.nickname || "User";
+
+                if(vid) {
+                    document.getElementById('vidPlayer').src = vid;
+                    document.getElementById('dlLink').href = vid;
+                    document.getElementById('dlLink').setAttribute('download', `xchami_${Date.now()}.mp4`);
+                    document.getElementById('authName').innerText = "@" + user;
+                    
+                    const audBtn = document.getElementById('audioLink');
+                    if(aud) { audBtn.href = aud; audBtn.style.display = 'flex'; }
+                    else { audBtn.style.display = 'none'; }
+
+                    res.style.display = 'block';
+                    DB.download();
+                    DB.log("Success: Ready.");
+                    showToast("Download Ready!");
+                } else { throw new Error("No URL found"); }
+
+            } catch(e) {
+                showToast("Failed. Link invalid.", true);
+                DB.log("Error: " + e.message);
+            } finally {
+                btn.innerHTML = 'Download Video';
+                btn.disabled = false;
+            }
+        }
+
+        function resetUI() {
+            document.getElementById('urlInput').value = '';
+            document.getElementById('resultArea').style.display = 'none';
+        }
+
+        let clicks = 0;
+        function secretTrigger() {
+            clicks++;
+            if(clicks === 5) { document.getElementById('pinModal').style.display = 'flex'; clicks = 0; }
+            setTimeout(() => clicks=0, 2000);
+        }
+
+        function checkPin() {
+            if(document.getElementById('pinIn').value === "3522") {
+                document.getElementById('pinModal').style.display = 'none';
+                document.getElementById('userView').style.display = 'none';
+                document.getElementById('adminView').style.display = 'block';
+                startAdmin();
+                showToast("Admin Mode");
+            } else { showToast("Access Denied", true); }
+        }
+
+        function logoutAdmin() {
+            document.getElementById('adminView').style.display = 'none';
+            document.getElementById('userView').style.display = 'flex';
+        }
+
+        function startAdmin() {
+            renderStats(); renderLogs(); initChart();
+            setInterval(() => { document.getElementById('sysTime').innerText = new Date().toLocaleTimeString(); }, 1000);
+        }
+
+        function renderStats() {
+            const d = DB.get();
+            document.getElementById('statVisits').innerText = d.visits;
+            document.getElementById('statDownloads').innerText = d.downloads;
+        }
+
+        function renderLogs() {
+            const logs = DB.get().logs;
+            document.getElementById('activityLog').innerHTML = logs.map(l => `<div class="log-item"><span class="log-time">[${l.t}]</span> ${l.m}</div>`).join('');
+        }
+
+        function clearData() {
+            if(confirm("Factory Reset?")) {
+                localStorage.removeItem('x_ultimate');
+                renderStats(); renderLogs(); initChart();
+                showToast("Data Cleared");
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('adminChart');
+            if(window.myChart) window.myChart.destroy();
+            window.myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['M','T','W','T','F','S','T'],
+                    datasets: [{
+                        label: 'DLs',
+                        data: DB.get().chart,
+                        borderColor: '#00f2ea',
+                        backgroundColor: 'rgba(0, 242, 234, 0.1)',
+                        fill: true, tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend:{display:false} },
+                    scales: { x: { grid:{display:false} }, y: { grid:{color:'#222'} } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
